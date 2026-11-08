@@ -947,7 +947,6 @@ function slDraw() {
     if (rh.judge && rh.mode === 'play') pxFont(g, rh.judge.text, SL.SX, sy - 10 - (24 - rh.judge.t) / 4, rh.judge.col, 6, 'center');
     pxFont(g, rhStarTxt(rh.stars), 4, H - 6, '#6a5a9a', 6);
   }
-  if (rh.mode === 'play' && now < 0) pxFont(g, String(Math.ceil(-now)), W / 2, 34, '#ffd84a', 16, 'center');
   rhScreens(70);
 }
 const slMove = d => { if (rh?.mode === 'play') rh.lane = Math.max(0, Math.min(SL.LANES - 1, rh.lane + d)); };

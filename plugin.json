@@ -1,7 +1,7 @@
 {
   "id": "neodex.sillage",
   "name": "Sillage",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "author": "NDesumeur",
   "description": "Jeu de rythme en vol : ton vaisseau file sur quatre altitudes au-dessus d'une ville de nuit. Monte et descends pour cueillir les étoiles à la hauteur de leur son, suis les rubans des notes longues et franchis les portes d'énergie d'un coup de turbo. Les 200 morceaux de Rythme notés de 1 à 10 étoiles ou ta propre musique ; combo, note de S à D.",
   "icon": "icon.png",

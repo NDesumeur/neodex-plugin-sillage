@@ -514,7 +514,7 @@ async function rhAnalyse(buf) {
   const Y = () => new Promise(r => setTimeout(r, 0));  // on rend la main à l'écran pendant l'analyse
   const k = Math.max(1, Math.round(buf.sampleRate / 11025)), sr = buf.sampleRate / k, chs = Array.from({length: buf.numberOfChannels}, (_, c) => buf.getChannelData(c));
   const n = Math.floor(buf.length / k), x = new Float32Array(n);
-  for (let i = 0; i < n; i++) { if (i % 400000 === 399999) await Y(); let s = 0; for (const ch of chs) for (let j = 0; j < k; j++) s += ch[i * k + j]; x[i] = s / (k * chs.length); }
+  for (let i = 0; i < n; i++) { if (i % 400000 === 399999) { rhBar(.6 + .3 * i / n); await Y(); } let s = 0; for (const ch of chs) for (let j = 0; j < k; j++) s += ch[i * k + j]; x[i] = s / (k * chs.length); }
   const N = 512, H = 128, fps = sr / H, F = Math.max(0, Math.floor((n - N) / H)), hz = sr / N;
   const edges = [30, 150, 500, 2000, 5000].map(f => Math.max(1, Math.min(N / 2, Math.round(f / hz))));
   const win = Float32Array.from({length: N}, (_, i) => .5 - .5 * Math.cos(2 * Math.PI * i / (N - 1)));
@@ -597,8 +597,10 @@ async function rhLoadImport(imp) {
   const has = imp.file && (await neo.musicExists([imp.file]))[imp.file];
   const src = has ? 'neoplugin://neodex.music/file/' + encodeURIComponent(imp.file) : imp.url ? 'neoplugin://neodex.music/stream/?u=' + encodeURIComponent(imp.url) : '';
   if (!src) throw new Error('le fichier de cette musique n\'est pas sur ce PC');
-  rhAudio(); toast('Analyse de la musique…');
-  const buffer = await rhCtx.decodeAudioData(await neo.musicBuffer(src)), a = await rhAnalyse(buffer), r = {a, buffer};
+  rhAudio(); toast('Analyse de la musique…'); rhBar(.08);
+  const raw = await neo.musicBuffer(src); rhBar(.35);
+  const buffer = await rhCtx.decodeAudioData(raw); rhBar(.6);
+  const a = await rhAnalyse(buffer), r = {a, buffer}; rhBar(.95);
   rhAnalysed.set(imp.id, r);
   if (imp.bpm !== a.bpm || !imp.len) { imp.bpm = a.bpm; imp.len = Math.round(a.len); saveGames(); }
   return r;
@@ -639,7 +641,7 @@ function rhSound(e, when, c = rhCtx, out = rhOut) {
 const rhRendered = new Map();
 async function rhRenderSong(i, c) {  // synthèse faite à la main dans un tableau (le moteur audio hors temps réel mettait plus de 20 s)
   if (rhRendered.has(i)) return rhRendered.get(i);
-  toast('Préparation du niveau…'); await new Promise(r => setTimeout(r, 40));
+  toast('Préparation du niveau…'); rhBar(.3); await new Promise(r => setTimeout(r, 40));
   rhAudio();
   const R = 44100, N = Math.ceil((c.len + 1.5) * R), out = new Float32Array(N), nz = rhNoise.getChannelData(0), TAU = 2 * Math.PI;
   const biquad = (type, f) => { const w = TAU * f / R, al = Math.sin(w) / 2, cw = Math.cos(w), a0 = 1 + al, b = type === 'hp' ? [(1 + cw) / 2, -(1 + cw), (1 + cw) / 2] : [al, 0, -al]; return {b0: b[0] / a0, b1: b[1] / a0, b2: b[2] / a0, a1: -2 * cw / a0, a2: (1 - al) / a0}; };
@@ -699,8 +701,31 @@ function rhSongStars(i, diff) {
   return rhStarCache.get(k);
 }
 const rhStarTxt = s => s.toFixed(1) + '★';
+// avant la partie : une barre de chargement (la musique est lue, décodée et analysée en entier d'avance, rien ne se charge pendant
+// la partie), puis, une fois en plein écran, un compte à rebours : le passage en plein écran (qui fige l'écran un instant) ne tombe jamais sur des notes
+const rhOver = () => {
+  const box = cv.parentElement; let o = box.querySelector(':scope > .rhOver'); if (o) return o;
+  o = document.createElement('div'); o.className = 'rhOver';
+  o.innerHTML = '<div class="rhBar" hidden><span>Chargement du niveau…</span><i><b></b></i></div><div class="rhCount" aria-live="assertive"></div>';
+  const st = document.createElement('style'); st.textContent = '.rhOver{position:absolute;inset:0;pointer-events:none;z-index:5}'
+    + '.rhBar{position:absolute;left:50%;bottom:12%;transform:translateX(-50%);width:min(60%,420px);text-align:center;font-family:inherit;font-size:13px;line-height:1.6;color:#fff;text-shadow:0 1px 3px #000}'
+    + '.rhBar i{display:block;height:8px;margin-top:6px;border-radius:4px;background:rgba(0,0,0,.55);box-shadow:0 0 0 1px rgba(255,255,255,.35);overflow:hidden}'
+    + '.rhBar b{display:block;height:100%;width:0;background:var(--accent,#3fe0ff);transition:width .25s}'
+    + '.rhCount{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:inherit;font-weight:800;font-size:min(22vw,22vh);line-height:1;color:#fff;text-shadow:0 0 24px var(--accent,#3fe0ff),0 4px 0 rgba(0,0,0,.6)}';
+  o.append(st); if (getComputedStyle(box).position === 'static') box.style.position = 'relative'; box.append(o); return o;
+};
+const rhBar = p => { const b = rhOver().querySelector('.rhBar'); b.hidden = p == null; if (p != null) b.querySelector('b').style.width = Math.round(p * 100) + '%'; };
+function rhCount() {  // 3, 2, 1 jusqu'au départ de la musique (l'horloge audio : une pause arrête le compte)
+  const c = rhOver().querySelector('.rhCount'), tick = () => {
+    const left = rh && rhCtx && (rh.mode === 'play' || rh.mode === 'pause') ? rh.t0 - rhCtx.currentTime : 0, n = left > 0 && left <= 3 ? String(Math.ceil(left)) : '';
+    if (c.textContent !== n) c.textContent = n;
+    if (left > 0) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);  // après le passage en mode « play »
+}
 let rhTok = 0;
-async function rhSelect(i, diff) {  // i : numéro d'un morceau du jeu, ou identifiant d'une musique importée
+async function rhSelect(i, diff) { const me = rhTok + 1; rhBar(.03); try { return await rhPrepare(i, diff); } finally { if (me === rhTok) rhBar(null); } }
+async function rhPrepare(i, diff) {  // i : numéro d'un morceau du jeu, ou identifiant d'une musique importée
   let info, c, base; const tok = ++rhTok;
   if (rh) { try { rh.src?.stop(); } catch {} rh.mode = 'load'; }
   if (typeof i === 'number') {
@@ -721,7 +746,7 @@ async function rhSelect(i, diff) {  // i : numéro d'un morceau du jeu, ou ident
 }
 const rhFull = on => { try { if (on && !document.fullscreenElement) cv.parentElement.requestFullscreen?.().catch(() => {}); if (!on && document.fullscreenElement) document.exitFullscreen(); } catch {} };
 function rhBegin() {  // plein écran (par-dessus la barre de NeoDex), puis le morceau part dans 2 secondes
-  rhFull(true); rhAudio(); rhCtx.resume(); rh.t0 = rhCtx.currentTime + 2; rh.mode = 'play';
+  rhFull(true); rhAudio(); rhCtx.resume(); rh.t0 = rhCtx.currentTime + 4; rhCount(); rh.mode = 'play';
   try { rh.src?.stop(); } catch {} rh.src = rhCtx.createBufferSource(); rh.src.buffer = rh.c.buffer; rh.src.connect(rhOut); rh.src.start(rh.t0);
 }
 function rhPress() {  // espace ou clic hors partie : jouer, reprendre, rejouer

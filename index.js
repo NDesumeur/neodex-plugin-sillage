@@ -935,12 +935,13 @@ const RHG = {key: 'sillage', factor: 1.05, color: '#3fe0ff',
   help: [['↑ ↓ ou souris : changer d\'altitude, cueillir les étoiles', '#c8f8ff'], ['ESPACE ou clic : turbo pour passer les portes', '#ffd84a'], ['Reste sur les rubans des notes longues', '#e4d0ff']],
   // étoiles à cueillir (une par note), rubans (notes longues), et une porte d'énergie sur chaque accord
   chart(base) {
-    const out = []; let lane = 1, lastT = -9, lastGate = -9;
+    const out = []; let lane = 1, lastT = -9, lastGate = -9, ride = -9;
     base.forEach((n, i) => {
       const chord = base[i - 1] && Math.abs(base[i - 1].t - n.t) < .01;
       if (chord) { if (n.t - lastGate > .3) { out.push({t: n.t, kind: 'gate', lane: -1}); lastGate = n.t; } return; }
+      if (n.t < ride) return;  // pendant un ruban (et le temps d'en descendre) : pas d'étoile ailleurs, on ne peut pas être à deux altitudes
       let want = n.lane; if (n.t - lastT < .26 && Math.abs(want - lane) > 1) want = lane + Math.sign(want - lane);  // pas de saut de trois étages sur des notes serrées
-      lane = want; out.push({t: n.t, kind: 'orb', lane, len: n.len}); lastT = n.t + (n.len || 0);
+      lane = want; out.push({t: n.t, kind: 'orb', lane, len: n.len}); lastT = n.t + (n.len || 0); if (n.len) ride = lastT + .15;
     });
     if (!out.some(n => n.kind === 'gate')) out.filter((n, i) => i % 12 === 6).forEach(n => out.push({t: n.t + .001, kind: 'gate', lane: -1}));  // au moins quelques portes, même en facile
     return out.sort((a, b) => a.t - b.t);
@@ -1025,8 +1026,8 @@ document.addEventListener('keydown', e => {
 document.addEventListener('keyup', e => { if (e.key === ' ' && keyOk(e)) e.preventDefault(); });
 cv.onpointermove = e => { if (rh?.mode !== 'play') return; const [, y] = cpos(e); rh.lane = Math.max(0, Math.min(SL.LANES - 1, Math.round(SL.LANES - 1 - (y - SL.TOP) / SL.GAP))); };
 cv.onpointerdown = e => { e.preventDefault(); if (!rh) return; if (rh.mode === 'play') slBoost(); else rhPress(); };
-{  // vérification : étoiles sur les 4 altitudes, des portes dans chaque difficulté, jamais trois étages d'un coup sur des notes serrées
-  const c = rhCompose(RH_SONGS[12]), ok = Object.keys(RH_DIFFS).every(d => { const x = RHG.chart(rhChart(c, d), c, d), o = x.filter(n => n.kind === 'orb'); return x.some(n => n.kind === 'gate') && o.every((n, i) => !i || n.t - o[i - 1].t >= .26 || Math.abs(n.lane - o[i - 1].lane) <= 1); });
+{  // vérification : étoiles sur les 4 altitudes, des portes dans chaque difficulté, jamais trois étages d'un coup sur des notes serrées, aucune étoile pendant un ruban
+  const c = rhCompose(RH_SONGS[12]), ok = Object.keys(RH_DIFFS).every(d => { const x = RHG.chart(rhChart(c, d), c, d), o = x.filter(n => n.kind === 'orb'); return x.some(n => n.kind === 'gate') && o.some(n => n.len) && o.every((n, i) => !i || (n.t - o[i - 1].t >= .26 || Math.abs(n.lane - o[i - 1].lane) <= 1) && n.t >= o[i - 1].t + (o[i - 1].len || 0)); });
   console.assert(ok, 'sillage');
 }
 ctx.onOpen(() => rhOpen());

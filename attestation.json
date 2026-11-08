@@ -1,9 +1,9 @@
 {
   "pluginId": "neodex.sillage",
   "repo": "NDesumeur/neodex-plugin-sillage",
-  "version": "1.0.5",
-  "sha256": "0c788c4aa55ede08dba65bcedaf746fc09a2f892df3fb91b966b87bf72e40a9e",
-  "approvedAt": "2026-11-08T19:05:41.997Z",
+  "version": "1.0.6",
+  "sha256": "d01ab15bf3dfe726f9cfd998fb80635ca3446b17da99f49b41adfa5ae315ff7f",
+  "approvedAt": "2026-11-08T20:59:57.328Z",
   "neobase": ">=4.1.0",
-  "signature": "PG592wm9LSsBUhbTHgV9k/g20D/zrSRiuNIQKL8ZEIErO86Eb+ww2K92m9EPfL2w4oS6XdiQ6zWLtEgwz/y0CA=="
+  "signature": "55bKbgZPz5JG5IIb8vB8lKQS1saFakBFDS+fyI7BlWAOeTzEin8CNonnLzYIHuUw1ffmXPNHYVMA3aVas34/Dg=="
 }

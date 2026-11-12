@@ -1,6 +1,6 @@
 # Sillage (Wake)
 
-A flying rhythm game: your ship speeds along four altitudes above a city at night. Climb and dive to pick up stars to the beat of the music, follow ribbons and get through energy gates with a boost. Play the 200 tracks from the Rythme plugin, or your own music.
+A flying rhythm game: your ship speeds along four altitudes above a city at night. Climb and dive to pick up stars to the beat of the music, follow ribbons and get through energy gates with a boost. Play the 1200 tracks from the Rythme plugin, or your own music.
 
 *Version française : [README.md](README.md)*
 
@@ -22,7 +22,7 @@ Each note is judged by how far it is from the right moment: **Perfect**, **Good*
 
 ## Songs and difficulty
 
-The **Songs** tab offers the 200 Rythme tracks. Each level's difficulty is worked out from its notes, from 1 to 10 stars.
+The **Songs** tab offers the 1200 Rythme tracks. Each level's difficulty is worked out from its notes, from 1 to 10 stars.
 
 ## My music
 

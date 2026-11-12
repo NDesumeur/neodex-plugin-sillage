@@ -1,6 +1,6 @@
 # Sillage
 
-Un jeu de rythme en vol : ton vaisseau file sur quatre altitudes au-dessus d'une ville de nuit. Monte et descends pour cueillir les étoiles au rythme de la musique, suis les rubans et franchis les portes d'énergie d'un coup de turbo. Joue les 200 morceaux du plugin Rythme, ou ta propre musique.
+Un jeu de rythme en vol : ton vaisseau file sur quatre altitudes au-dessus d'une ville de nuit. Monte et descends pour cueillir les étoiles au rythme de la musique, suis les rubans et franchis les portes d'énergie d'un coup de turbo. Joue les 1200 morceaux du plugin Rythme, ou ta propre musique.
 
 *English version: [README.en.md](README.en.md)*
 
@@ -22,7 +22,7 @@ Chaque note est jugée selon l'écart avec le bon moment : **Parfait**, **Bien**
 
 ## Chansons et difficulté
 
-L'onglet **Chansons** reprend les 200 morceaux de Rythme. La difficulté de chaque niveau est calculée d'après ses notes, de 1 à 10 étoiles.
+L'onglet **Chansons** reprend les 1200 morceaux de Rythme. La difficulté de chaque niveau est calculée d'après ses notes, de 1 à 10 étoiles.
 
 ## Mes musiques
 

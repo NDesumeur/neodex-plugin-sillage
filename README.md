@@ -6,7 +6,8 @@ Un jeu de rythme en vol : ton vaisseau file sur quatre altitudes au-dessus d'une
 
 ## Commandes
 
-- **↑** (ou **Z** / **W**) et **↓** (ou **S**), ou la **souris** : changer d'altitude.
+- **↑** (ou **Z** / **W**) et **↓** (ou **S**), la **molette**, ou la **souris** : changer d'altitude. Une petite croix montre où est ta souris, et une flèche sur le bord gauche l’altitude visée.
+- **1** à **4** : aller droit à une altitude, de la plus basse à la plus haute.
 - **Espace**, **Entrée**, **D**, **→** ou **clic** : turbo.
 - **P** : pause · **Plein écran** pendant la partie.
 

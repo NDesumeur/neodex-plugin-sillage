@@ -6,7 +6,8 @@ A flying rhythm game: your ship speeds along four altitudes above a city at nigh
 
 ## Controls
 
-- **↑** (or **W** / **Z**) and **↓** (or **S**), or the **mouse**: change altitude.
+- **↑** (or **W** / **Z**) and **↓** (or **S**), the **wheel**, or the **mouse**: change altitude. A small cross shows where your mouse is, and an arrow on the left edge the altitude it aims at.
+- **1** to **4**: go straight to an altitude, from the lowest to the highest.
 - **Space**, **Enter**, **D**, **→** or **click**: boost.
 - **P**: pause · **Full screen** during the game.
 

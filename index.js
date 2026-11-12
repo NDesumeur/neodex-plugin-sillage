@@ -1,7 +1,7 @@
 // Sillage : Un jeu de rythme en vol : ton vaisseau file sur quatre altitudes au-dessus d'une ville de nuit. Cueille les étoiles en rythme et passe les portes d'énergie au turbo.
 // Jeu NeoDex en pixel art dessiné à la main (police bitmap, cadres et boutons en pixels). Il tourne dans le bac à sable de NeoDex.
 const HTML = `<div class="appWrap wide">
-  <div class="agHead"><span class="label">Sillage</span><span class="hint">↑ ↓ ou souris : altitude · espace ou clic : turbo · P : pause</span></div>
+  <div class="agHead"><span class="label">Sillage</span><span class="hint">↑ ↓, molette, 1 à 4 ou souris : altitude · espace ou clic : turbo · P : pause</span></div>
   <div class="gMain"><div class="gameBox"><canvas id="gc" width="320" height="180"></canvas><button class="btn rhFs" id="rhFs">PLEIN ÉCRAN</button></div>
     <div class="gSide">
       <div class="sysCard"><b>RECORDS</b><div class="gStats" id="gStats"></div></div>
@@ -999,7 +999,7 @@ function rhOpen() {
 const SL = {SX: 64, TOP: 32, GAP: 31, LANES: 4, COLS: ['#5fdf6a', '#3fe0ff', '#b07aff', '#ff4fa8']};
 const slY = l => SL.TOP + (SL.LANES - 1 - l) * SL.GAP;  // voie 0 (sons graves) en bas, voie 3 (aigus) en haut
 const RHG = {key: 'sillage', factor: 1.05, color: '#3fe0ff',
-  help: [['↑ ↓ ou souris : changer d\'altitude, cueillir les étoiles', '#c8f8ff'], ['ESPACE ou clic : turbo pour passer les portes', '#ffd84a'], ['Reste sur les rubans des notes longues', '#e4d0ff']],
+  help: [['↑ ↓, molette, 1 à 4 ou souris : changer d\'altitude, cueillir les étoiles', '#c8f8ff'], ['ESPACE ou clic : turbo pour passer les portes', '#ffd84a'], ['Reste sur les rubans des notes longues', '#e4d0ff']],
   // étoiles à cueillir (une par note), rubans (notes longues), et une porte d'énergie sur chaque accord
   chart(base) {
     const out = []; let lane = 1, lastT = -9, lastGate = -9, ride = -9;
@@ -1059,7 +1059,8 @@ function slDraw() {
   g.drawImage(SL_SKY, 0, 0);
   for (const [img, k] of [[SL_FAR, .15], [SL_NEAR, .4]]) { const o = Math.floor(scroll * k) % W; g.drawImage(img, -o, 0); g.drawImage(img, W - o, 0); }
   // les quatre altitudes : des pointillés qui défilent, plus clairs sur le temps
-  for (let l = 0; l < SL.LANES; l++) { const y = slY(l); for (let x = (-Math.floor(scroll) % 8 + 8) % 8; x < W; x += 8) px(g, pulse > .5 ? '#3a2a6a' : '#22183e', x, y, 3, 1); }
+  const aim = slMouse.y == null ? -1 : slLaneAt(slMouse.y);
+  for (let l = 0; l < SL.LANES; l++) { const y = slY(l); for (let x = (-Math.floor(scroll) % 8 + 8) % 8; x < W; x += 8) px(g, l === aim && live ? '#5a4a9a' : pulse > .5 ? '#3a2a6a' : '#22183e', x, y, 3, 1); }
   // les rubans des notes longues, puis les étoiles et les portes
   for (const n of rh.notes) {
     if (n.kind !== 'orb' || !n.len || n.tail || (n.broken && !n.ride)) continue; const x1 = SL.SX + (n.t - now) * sp, x2 = SL.SX + (n.t + n.len - now) * sp; if (x2 < 0 || x1 > W) continue;
@@ -1075,6 +1076,13 @@ function slDraw() {
   const sy = Math.round(rh.y) + sh; g.drawImage(SL_FLAME[Math.floor(rh.tick / 3) % 2], SL.SX - 9, sy - 1); if (rh.boost) { px(g, '#ffa030', SL.SX - 16, sy, 6, 1); px(g, '#fff4a0', SL.SX - 12, sy, 3, 1); }
   g.drawImage(SL_SHIP, SL.SX - 6, sy - 4);
   for (const s of rh.sparks) { g.globalAlpha = s.life / 16; px(g, s.col, s.x, s.y, 2, 2); g.globalAlpha = 1; }
+  if (slMouse.y != null && live && Date.now() - slMouse.at < 2500) {  // la souris : une petite flèche sur le bord gauche, et un trait vers l'altitude visée
+    const my = Math.round(Math.max(SL.TOP - 8, Math.min(slY(0) + 8, slMouse.y))), ty = slY(aim);
+    for (let i = 0; i < 4; i++) px(g, '#ffffff', 2 + i, my - 3 + i, 1, 7 - i * 2); px(g, '#3fe0ff', 7, my, 3, 1);
+    const mx = Math.round(slMouse.x), cy = Math.round(slMouse.y);  // une croix à l'endroit de la souris (le curseur est caché en plein écran)
+    for (const [c, o] of [['#05010b', 1], ['#ffffff', 0]]) { px(g, c, mx - 4 - o, cy - o, 3 + o * 2, 1 + o * 2); px(g, c, mx + 2 - o, cy - o, 3 + o * 2, 1 + o * 2); px(g, c, mx - o, cy - 4 - o, 1 + o * 2, 3 + o * 2); px(g, c, mx - o, cy + 2 - o, 1 + o * 2, 3 + o * 2); }
+    if (aim !== rh.lane) for (let y = Math.min(my, ty); y <= Math.max(my, ty); y += 2) px(g, '#3fe0ff', 8, y, 1, 1);
+  }
   if (rh.mode !== 'ready' && rh.mode !== 'load') {
     rhProgress(now, '#3fe0ff'); pxFont(g, String(rh.score).padStart(7, '0'), 4, 12, '#ffffff', 7); if (rh.combo > 4) pxFont(g, rh.combo + ' combo', W - 4, 12, '#c8f8ff', 7, 'right');
     if (rh.judge && rh.mode === 'play') pxFont(g, rh.judge.text, SL.SX, sy - 10 - (24 - rh.judge.t) / 4, rh.judge.col, 6, 'center');
@@ -1083,15 +1091,20 @@ function slDraw() {
   rhScreens(70);
 }
 const slMove = d => { if (rh?.mode === 'play') rh.lane = Math.max(0, Math.min(SL.LANES - 1, rh.lane + d)); };
+const slMouse = {x: 0, y: null, at: 0}, slLaneAt = y => Math.max(0, Math.min(SL.LANES - 1, Math.round(SL.LANES - 1 - (y - SL.TOP) / SL.GAP)));
 document.addEventListener('keydown', e => {
   if (!keyOk(e) || !rh) return; const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (k === 'ArrowUp' || k === 'z' || k === 'w') { e.preventDefault(); slMove(1); }
   if (k === 'ArrowDown' || k === 's') { e.preventDefault(); slMove(-1); }
+  if (/^[1-4]$/.test(k) && rh.mode === 'play') { e.preventDefault(); rh.lane = +k - 1; }  // 1 à 4 : droit à une altitude, de bas en haut
   if (k === ' ' || k === 'Enter' || k === 'd' || k === 'ArrowRight') { e.preventDefault(); if (!e.repeat) { if (rh.mode === 'play') slBoost(); else rhPress(); } }
   if (k === 'p' || k === 'Escape') rhPause();
 });
 document.addEventListener('keyup', e => { if (e.key === ' ' && keyOk(e)) e.preventDefault(); });
-cv.onpointermove = e => { if (rh?.mode !== 'play') return; const [, y] = cpos(e); rh.lane = Math.max(0, Math.min(SL.LANES - 1, Math.round(SL.LANES - 1 - (y - SL.TOP) / SL.GAP))); };
+cv.onpointermove = e => { const [x, y] = cpos(e); slMouse.x = x; slMouse.y = y; slMouse.at = Date.now(); if (rh?.mode === 'play') rh.lane = slLaneAt(y); };
+cv.__sl = () => rh?.lane;  // pour le test « local »
+let slWheel = 0;  // la molette : un cran = une altitude (les pavés tactiles envoient beaucoup de petits pas : on les additionne)
+cv.addEventListener('wheel', e => { if (rh?.mode !== 'play') return; e.preventDefault(); if (Math.sign(e.deltaY) !== Math.sign(slWheel)) slWheel = 0; slWheel += e.deltaY; while (Math.abs(slWheel) >= 40) { slMove(slWheel < 0 ? 1 : -1); slWheel -= Math.sign(slWheel) * 40; } slMouse.at = 0; }, {passive: false});
 cv.onpointerdown = e => { e.preventDefault(); if (!rh) return; if (rh.mode === 'play') slBoost(); else rhPress(); };
 {  // vérification : étoiles sur les 4 altitudes, des portes dans chaque difficulté, jamais trois étages d'un coup sur des notes serrées, aucune étoile pendant un ruban
   const c = rhCompose(RH_SONGS[12]), ok = Object.keys(RH_DIFFS).every(d => { const x = RHG.chart(rhChart(c, d), c, d), o = x.filter(n => n.kind === 'orb'); return x.some(n => n.kind === 'gate') && (d === 'facile' || o.some(n => n.len)) && o.every((n, i) => !i || (n.t - o[i - 1].t >= .26 || Math.abs(n.lane - o[i - 1].lane) <= 1) && n.t >= o[i - 1].t + (o[i - 1].len || 0)); });

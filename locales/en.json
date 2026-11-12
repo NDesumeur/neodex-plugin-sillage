@@ -362,5 +362,13 @@
  "éclatante": "dazzling",
  "électrique": "electric",
  "↑ ↓ ou souris : altitude · espace ou clic : turbo · P : pause": "↑ ↓ or mouse: altitude · space or click: turbo · P: pause",
- "↑ ↓ ou souris : changer d'altitude, cueillir les étoiles": "↑ ↓ or mouse: change altitude, pick the stars"
+ "↑ ↓ ou souris : changer d'altitude, cueillir les étoiles": "↑ ↓ or mouse: change altitude, pick the stars",
+ "↑ ↓, molette, 1 à 4 ou souris : altitude · espace ou clic : turbo · P : pause": "↑ ↓, wheel, 1 to 4 or mouse: altitude · space or click: boost · P: pause",
+ "↑ ↓, molette, 1 à 4 ou souris : changer d'altitude, cueillir les étoiles": "↑ ↓, wheel, 1 to 4 or mouse: change altitude, collect the stars",
+ "la partie devait commencer": "the game should have started",
+ "la touche 3 devait mener à la 3e altitude :": "key 3 should lead to the 3rd altitude:",
+ "la molette vers le haut devait faire monter :": "wheel up should go up:",
+ "trois crans vers le bas devaient faire descendre en bas :": "three notches down should go to the bottom:",
+ "la souris en haut devait mener à la plus haute altitude :": "the mouse at the top should lead to the highest altitude:",
+ "touches 1 à 4, molette et souris ok": "keys 1 to 4, wheel and mouse ok"
 }

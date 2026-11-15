@@ -44,3 +44,8 @@ Tes scores et notes par niveau et tes réglages sont enregistrés par NeoDex, sa
 Dans NeoDex : **NeoStore → À découvrir → Sillage → Installer**.
 
 Développer un plugin : voir le [SDK NeoDex](https://github.com/NDesumeur/neodex-sdk).
+
+## Manette et courbe de précision
+
+- **Manette** : la croix ou le stick gauche font monter et descendre le vaisseau, A ou B lancent le turbo (et le morceau), Start lance le morceau, Select met en pause.
+- **Écran de fin** : une courbe montre la précision le long du morceau, avec les notes ratées en rouge.

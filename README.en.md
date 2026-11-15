@@ -44,3 +44,8 @@ Your scores and grades per level and your settings are stored by NeoDex, backed 
 In NeoDex: **NeoStore → Discover → Sillage → Install**.
 
 Building a plugin: see the [NeoDex SDK](https://github.com/NDesumeur/neodex-sdk).
+
+## Gamepad and accuracy curve
+
+- **Gamepad**: the D-pad or the left stick move the ship up and down, A or B fire the boost (and start the song), Start starts the song, Select pauses.
+- **End screen**: a curve shows your accuracy along the song, with missed notes in red.

@@ -867,7 +867,7 @@ async function rhPrepare(i, diff) {  // i : numéro d'un morceau du jeu, ou iden
 }
 const rhFull = on => { try { if (on && !document.fullscreenElement) cv.parentElement.requestFullscreen?.().catch(() => {}); if (!on && document.fullscreenElement) document.exitFullscreen(); } catch {} };
 function rhBegin() {  // plein écran (par-dessus la barre de NeoDex), puis le morceau part dans 2 secondes
-  rhFull(true); rhAudio(); rhCtx.resume(); rh.t0 = rhCtx.currentTime + 4; rhCount(); rh.mode = 'play';
+  rhFull(true); rhAudio(); rhCtx.resume(); rh.t0 = rhCtx.currentTime + 4; rh.hist = []; rhCount(); rh.mode = 'play';
   try { rh.src?.stop(); } catch {} rh.src = rhCtx.createBufferSource(); rh.src.buffer = rh.c.buffer; rh.src.connect(rhOut); rh.src.start(rh.t0);
 }
 function rhPress() {  // espace ou clic hors partie : jouer, reprendre, rejouer
@@ -881,10 +881,10 @@ function rhPause() { if (rh?.mode === 'play') { rh.mode = 'pause'; rhCtx?.suspen
 const rhWin = dt => RH.WIN.find(w => Math.abs(dt) <= w[0]);
 function rhHit(n, dt) {  // -> la fenêtre atteinte (PARFAIT, BIEN, OK), ou rien si la note est ratée
   const w = rhWin(dt); n.judged = true; if (!w) { rhMissed(n); return null; }
-  rh.dts.push(dt); rh.combo++; rh.maxCombo = Math.max(rh.maxCombo, rh.combo); rh.counts[w[1]]++; rh.score += Math.round(w[2] * (1 + Math.min(rh.combo, 100) / 100));
+  (rh.hist ??= []).push([n.t, {PARFAIT: 3, BIEN: 2, OK: 1}[w[1]] || 1]); rh.dts.push(dt); rh.combo++; rh.maxCombo = Math.max(rh.maxCombo, rh.combo); rh.counts[w[1]]++; rh.score += Math.round(w[2] * (1 + Math.min(rh.combo, 100) / 100));
   return w;
 }
-function rhMissed(n) { n.judged = true; n.missed = true; rh.combo = 0; rh.counts['RATÉ']++; }
+function rhMissed(n) { (rh.hist ??= []).push([n.t, 0]); n.judged = true; n.missed = true; rh.combo = 0; rh.counts['RATÉ']++; }
 function rhCheckEnd(now) {
   if (now <= rh.c.len + 1.5) return false;
   rh.mode = 'over'; rh.overAt = rh.tick; try { rh.src?.stop(); } catch {} rhFull(false);
@@ -910,6 +910,28 @@ function rhScreens(y0 = 90) {
   if (rh.mode === 'pause') gameText(g, W, [['PAUSE', '#ffffff', 12], ['Espace : reprendre', '#e8e0ff']], y0 + 20);
   if (rh.mode === 'over' && rh.tick - rh.overAt > 20) gameText(g, W, [['NOTE ' + rh.grade, rh.grade === 'S' ? '#ffd84a' : RHG.color, 14], [rh.score + ' points · ' + (rh.acc * 100).toFixed(1) + ' %', '#ffffff'], ['Combo max ' + rh.maxCombo + ' · ' + rhStarTxt(rh.stars), '#e8e0ff'],
     ['Parfait ' + rh.counts.PARFAIT + ' · Bien ' + rh.counts.BIEN + ' · OK ' + rh.counts.OK + ' · Raté ' + rh.counts['RATÉ'], '#a8a0c8'], [rh.record ? 'NOUVEAU RECORD !' : 'Espace : rejouer', '#ffd84a'], ...(rh.adj ? [['Décalage ajusté : ' + (rh.adj > 0 ? '+' : '') + rh.adj + ' ms', '#7ee07a']] : [])], y0 - 10);
+  if (rh.mode === 'over' && rh.tick - rh.overAt > 20) rhCurve(Math.min(g.canvas.height - 50, y0 - 10 + (rh.adj ? 6 : 5) * 14 + 16));
+}
+// la courbe de précision de l'écran de fin : la justesse le long du morceau (24 tranches ; 100 % = tout en PARFAIT), les notes ratées en rouge dessous
+function rhCurveData(hist, len, N = 24) {
+  const b = Array.from({length: N}, () => [0, 0]);
+  for (const [t, s] of hist) { const k = Math.min(N - 1, Math.max(0, Math.floor(t / len * N))); b[k][0] += s; b[k][1]++; }
+  return b.map(([s, n]) => n ? s / (n * 3) : null);
+}
+console.assert(rhCurveData([[0, 3], [1, 3], [9, 0], [9.5, 3]], 10, 2).join() === '1,0.5', 'rhCurveData');
+function rhCurve(y) {
+  const cw = g.canvas.width, N = 24, x0 = 22, w = cw - 64, h = 30, acc = rhCurveData(rh.hist || [], rh.c.len || 1, N), Y = a => Math.round(y + 6 + (1 - Math.max(0, Math.min(1, (a - .5) / .5))) * h);
+  g.fillStyle = 'rgba(7,3,20,.9)'; g.fillRect(x0 - 8, y - 9, w + 16, h + 22); px(g, RHG.color, x0 - 8, y - 9, w + 16, 1);
+  pxFont(g, 'PRÉCISION LE LONG DU MORCEAU', x0, y, '#a8a0c8', 6);
+  for (const [f, t] of [[1, '100'], [.75, '75']]) { for (let x = x0; x < x0 + w; x += 3) px(g, '#2a2050', x, Y(f), 1, 1); pxFont(g, t, x0 + w + 6, Y(f) + 3, '#5a4a8a', 5); }
+  let prev = null;
+  acc.forEach((a, k) => {
+    if (a == null) { prev = null; return; }
+    const xa = x0 + Math.round(k * w / N), xb = x0 + Math.round((k + 1) * w / N), yy = Y(a), col = a >= .9 ? '#7ee07a' : a >= .7 ? '#ffd84a' : '#ff4a5a';
+    if (prev != null) px(g, col, xa, Math.min(prev, yy), 1, Math.abs(prev - yy) + 2);
+    px(g, col, xa, yy, xb - xa, 2); prev = yy;
+  });
+  for (const [t, s] of rh.hist || []) if (!s) px(g, '#ff4a5a', x0 + Math.round(Math.min(1, t / (rh.c.len || 1)) * (w - 1)), y + h + 9, 1, 3);
 }
 const rhProgress = (now, col) => { px(g, '#1a1430', 0, 0, W, 2); px(g, col, 0, 0, Math.max(0, Math.min(1, now / rh.c.len)) * W, 2); };
 // la liste des morceaux, les imports, les réglages (le panneau de droite)
@@ -1088,7 +1110,7 @@ function slDraw() {
   if (rh.mode !== 'ready' && rh.mode !== 'load') {
     rhProgress(now, '#3fe0ff'); pxFont(g, String(rh.score).padStart(7, '0'), 4, 12, '#ffffff', 7); if (rh.combo > 4) pxFont(g, rh.combo + ' combo', W - 4, 12, '#c8f8ff', 7, 'right');
     if (rh.judge && rh.mode === 'play') pxFont(g, rh.judge.text, SL.SX, sy - 10 - (24 - rh.judge.t) / 4, rh.judge.col, 6, 'center');
-    pxFont(g, rhStarTxt(rh.stars), 4, H - 6, '#6a5a9a', 6);
+    if (rh.mode !== 'over') pxFont(g, rhStarTxt(rh.stars), 4, H - 6, '#6a5a9a', 6);  // sur l'écran de fin, la courbe prend ce coin
   }
   rhScreens(70);
 }
@@ -1105,6 +1127,21 @@ document.addEventListener('keydown', e => {
 document.addEventListener('keyup', e => { if (e.key === ' ' && keyOk(e)) e.preventDefault(); });
 cv.onpointermove = e => { const [x, y] = cpos(e); slMouse.x = x; slMouse.y = y; slMouse.at = Date.now(); if (rh?.mode === 'play') rh.lane = slLaneAt(y); };
 cv.__sl = () => rh?.lane;  // pour le test « local »
+cv.__rh = {st: () => rh, finish: hist => { rh.hist = hist; rh.mode = 'play'; rhCheckEnd(1e9); }};
+{  // la manette : croix ou stick gauche = monter et descendre, A ou B = turbo (et lancer le morceau), Start = lancer, Select = pause
+  const KEY = {12: 'ArrowUp', 13: 'ArrowDown', 0: ' ', 1: ' ', 9: ' ', 8: 'p'}, held = new Set();
+  const send = (k, type) => document.dispatchEvent(new KeyboardEvent(type, {key: k, bubbles: true}));
+  const loop = () => {
+    requestAnimationFrame(loop); if (!view.classList.contains('on') || !navigator.getGamepads) return;
+    const p = [...navigator.getGamepads()].find(Boolean); if (!p) return;
+    const down = new Set(), ay = p.axes?.[1] || 0;
+    for (const [i, k] of Object.entries(KEY)) if (p.buttons[i]?.pressed) down.add(k);
+    if (ay < -.6) down.add('ArrowUp'); if (ay > .6) down.add('ArrowDown');  // le stick : un cran par poussée, comme la croix
+    for (const k of down) if (!held.has(k)) { held.add(k); send(k, 'keydown'); }
+    for (const k of [...held]) if (!down.has(k)) { held.delete(k); send(k, 'keyup'); }
+  };
+  requestAnimationFrame(loop);
+}
 let slWheel = 0;  // la molette : un cran = une altitude (les pavés tactiles envoient beaucoup de petits pas : on les additionne)
 cv.addEventListener('wheel', e => { if (rh?.mode !== 'play') return; e.preventDefault(); if (Math.sign(e.deltaY) !== Math.sign(slWheel)) slWheel = 0; slWheel += e.deltaY; while (Math.abs(slWheel) >= 40) { slMove(slWheel < 0 ? 1 : -1); slWheel -= Math.sign(slWheel) * 40; } slMouse.at = 0; }, {passive: false});
 cv.onpointerdown = e => { e.preventDefault(); if (!rh) return; if (rh.mode === 'play') slBoost(); else rhPress(); };

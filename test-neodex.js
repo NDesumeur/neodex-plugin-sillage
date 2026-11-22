@@ -26,6 +26,9 @@ module.exports = async ({ pj, sleep }) => {
   const end = await pj(`(() => { const rh = document.getElementById('gc').__rh.st(); return [rh.mode, rh.hist.length].join(','); })()`);
   if (end !== 'over,200') throw new Error('écran de fin attendu : ' + end);
   if (process.env.NEO_SHOTS) { const d = await pj(`document.getElementById('gc').toDataURL()`); require('fs').writeFileSync(require('path').join(process.env.NEO_SHOTS, 'sillage-fin.png'), Buffer.from(d.split(',')[1], 'base64')); }
+  // 1.3.0 : le vol est enregistré pour le dessin de fin
+  const path = await pj(`document.getElementById('gc').__rh.st().path.length`);
+  if (!(path > 10)) throw new Error('le vol devait être enregistré : ' + path);
   const errs = await pj(`window.__e.join(' | ')`); if (errs) throw new Error('erreur : ' + errs);
-  return 'touches 1 à 4, molette, souris, manette et écran de fin ok';
+  return 'touches 1 à 4, molette, souris, manette, écran de fin et dessin du vol (' + path + ' points) ok';
 };

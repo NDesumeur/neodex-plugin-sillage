@@ -29,6 +29,13 @@ The **Songs** tab offers the 1200 Rythme tracks. Each level's difficulty is work
 
 In **My music**, create a level from an imported **audio file** or a track from your **NeoMusic** library: the game finds its tempo and strong beats and turns them into a level, at the chosen **difficulty**.
 
+## The city and the flight
+
+- On the game's songs, the **altitude follows the melody**: low notes at the bottom, high notes at the top.
+- The **foreground city listens to the music**: each building follows a band of sounds (bass to treble) and lights its windows higher the louder its band; the antennas blink on the beat.
+- The ship's trail takes the colour of the last star caught.
+- The end screen draws **your whole flight**, with the stars caught in their place.
+
 ## Settings
 
 - Music **volume**.

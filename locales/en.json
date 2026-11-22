@@ -369,7 +369,14 @@
  "la molette vers le haut devait faire monter :": "wheel up should go up:",
  "trois crans vers le bas devaient faire descendre en bas :": "three notches down should go to the bottom:",
  "la souris en haut devait mener à la plus haute altitude :": "the mouse at the top should lead to the highest altitude:",
- "Jeu de rythme en vol : ton vaisseau file sur quatre altitudes au-dessus d'une ville de nuit. Monte et descends pour cueillir les étoiles à la hauteur de leur son, suis les rubans des notes longues et franchis les portes d'énergie d'un coup de turbo. Les 1200 morceaux de Rythme notés de 1 à 10 étoiles ou ta propre musique ; combo, note de S à D. Se joue à la manette ; l'écran de fin montre la courbe de précision le long du morceau.": "A flying rhythm game: your ship speeds along four altitudes above a city at night. Climb and dive to pick up stars at the height of their sound, follow the ribbons of long notes and get through energy gates with a boost. The 1200 Rythme tracks rated from 1 to 10 stars or your own music; combo and grades from S to D. Playable with a gamepad; the end screen shows the accuracy curve along the song.",
+ "Jeu de rythme en vol : ton vaisseau file sur quatre altitudes au-dessus d'une ville de nuit. Monte et descends pour cueillir les étoiles à la hauteur de leur son, suis les rubans des notes longues et franchis les portes d'énergie d'un coup de turbo. Les 1200 morceaux de Rythme notés de 1 à 10 étoiles ou ta propre musique ; combo, note de S à D. Se joue à la manette ; l'écran de fin montre la courbe de précision le long du morceau. L'altitude suit la mélodie, la ville réagit à la musique, traînée de la couleur des étoiles, dessin du vol à la fin.": "A flying rhythm game: your ship speeds along four altitudes above a city at night. Climb and dive to pick up stars at the height of their sound, follow the ribbons of long notes and get through energy gates with a boost. The 1200 Rythme tracks rated from 1 to 10 stars or your own music; combo and grades from S to D. Playable with a gamepad; the end screen shows the accuracy curve along the song. Altitude follows the melody, the city reacts to the music, trail in the stars' colour, the flight drawn at the end.",
  "PRÉCISION LE LONG DU MORCEAU": "ACCURACY ALONG THE SONG",
- "touches 1 à 4, molette, souris, manette et écran de fin ok": "keys 1 to 4, wheel, mouse, gamepad and end screen ok"
+ "touches 1 à 4, molette, souris, manette et écran de fin ok": "keys 1 to 4, wheel, mouse, gamepad and end screen ok",
+ "TON VOL": "YOUR FLIGHT",
+ "la croix vers le bas devait faire descendre :": "the D-pad down should go down:",
+ "la croix vers le haut devait faire monter :": "the D-pad up should go up:",
+ "le stick vers le bas devait faire descendre :": "the stick down should go down:",
+ "écran de fin attendu :": "end screen expected:",
+ "le vol devait être enregistré :": "the flight should be recorded:",
+ "touches 1 à 4, molette, souris, manette, écran de fin et dessin du vol (": "keys 1 to 4, wheel, mouse, gamepad, end screen and flight drawing ("
 }

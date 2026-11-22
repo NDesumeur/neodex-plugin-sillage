@@ -29,6 +29,13 @@ L'onglet **Chansons** reprend les 1200 morceaux de Rythme. La difficulté de cha
 
 Dans **Mes musiques**, crée un niveau à partir d'un **fichier audio** importé ou d'une musique de ta bibliothèque **NeoMusic** : le jeu trouve son tempo et ses temps forts et en fait un niveau, à la **difficulté** choisie.
 
+## La ville et le vol
+
+- Sur les morceaux du jeu, l'**altitude suit la mélodie** : les notes graves en bas, les aiguës en haut.
+- La **ville du premier plan écoute la musique** : chaque immeuble suit une bande de sons (des basses aux aigus) et allume ses fenêtres d'autant plus haut que sa bande est forte ; les antennes clignotent sur le temps.
+- La traînée du vaisseau prend la couleur de la dernière étoile cueillie.
+- L'écran de fin dessine **tout ton vol**, avec les étoiles cueillies à leur place.
+
 ## Réglages
 
 - **Volume** de la musique.

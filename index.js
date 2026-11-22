@@ -1076,7 +1076,8 @@ const slY = l => SL.TOP + (SL.LANES - 1 - l) * SL.GAP;  // voie 0 (sons graves) 
 const RHG = {key: 'sillage', factor: 1.05, color: '#3fe0ff',
   help: [['↑ ↓, molette, 1 à 4 ou souris : changer d\'altitude, cueillir les étoiles', '#c8f8ff'], ['ESPACE ou clic : turbo pour passer les portes', '#ffd84a'], ['Reste sur les rubans des notes longues', '#e4d0ff']],
   // étoiles à cueillir (une par note), rubans (notes longues), et une porte d'énergie sur chaque accord
-  chart(base) {
+  chart(base, c) {
+    base = slPitchLanes(base, c);
     const out = []; let lane = 1, lastT = -9, lastGate = -9, ride = -9;
     base.forEach((n, i) => {
       const chord = base[i - 1] && Math.abs(base[i - 1].t - n.t) < .01;
@@ -1088,7 +1089,7 @@ const RHG = {key: 'sillage', factor: 1.05, color: '#3fe0ff',
     if (!out.some(n => n.kind === 'gate')) out.filter((n, i) => i % 12 === 6).forEach(n => out.push({t: n.t + .001, kind: 'gate', lane: -1}));  // au moins quelques portes, même en facile
     return out.sort((a, b) => a.t - b.t);
   },
-  reset() { Object.assign(rh, {lane: 1, y: slY(1), boost: 0, judge: null, trail: [], shake: 0}); },
+  reset() { Object.assign(rh, {lane: 1, y: slY(1), boost: 0, judge: null, trail: [], shake: 0, tcol: '', path: []}); },
   update() {
     const now = rhNow(), late = RH.WIN.at(-1)[0];
     rh.y += (slY(rh.lane) - rh.y) * .4;
@@ -1102,15 +1103,51 @@ const RHG = {key: 'sillage', factor: 1.05, color: '#3fe0ff',
     }
     if (rh.boost > 0) rh.boost--; if (rh.shake > 0) rh.shake--;
     rh.trail.push(rh.y); if (rh.trail.length > 16) rh.trail.shift();
+    if (rh.tick % 6 === 0 && now > 0) rh.path.push([now, rh.y, rh.tcol]);
     for (const s of rh.sparks) { s.x += s.vx; s.y += s.vy; s.life--; } rh.sparks = rh.sparks.filter(s => s.life > 0);
     if (rh.judge && --rh.judge.t <= 0) rh.judge = null;
     rhCheckEnd(now);
   },
   draw() { slDraw(); },
 };
+/* ---------- 1.3.0 : l'altitude suit la hauteur de la mélodie, la ville réagit à la musique, la traînée prend la couleur de l'étoile cueillie, le vol dessiné à la fin ---------- */
+// la hauteur : sur les morceaux du jeu, chaque note de la mélodie va à l'altitude de sa hauteur (les plus graves en bas, les plus aiguës en haut)
+function slPitchLanes(base, c) {
+  const L = c?.lead || []; if (L.length < 8) return base;
+  const ds = L.map(n => n.d).sort((a, b) => a - b), q = k => ds[Math.min(ds.length - 1, Math.floor(ds.length * k))], cut = [q(.25), q(.5), q(.75)];
+  const at = new Map(L.map(n => [Math.round(n.t * 1000), n.d]));
+  return base.map(n => { const d = at.get(Math.round(n.t * 1000)); return d == null ? n : {...n, lane: cut.filter(x => d > x).length}; });
+}
+{ const L = Array.from({length: 40}, (_, i) => ({t: i * .5, d: i % 8})), o = slPitchLanes(L.map(n => ({t: n.t, lane: 0})), {lead: L});
+  console.assert(o[0].lane === 0 && o[7].lane === 3 && o.every((n, i) => n.lane === slPitchLanes([{t: L[i].t, lane: 9}], {lead: L})[0].lane), 'slPitchLanes'); }
+let slAn = null, slBins = null;
+function slSpectrum() {  // 12 bandes du grave à l'aigu, de 0 à 1, mesurées sur la sortie audio du jeu
+  if (!rhCtx || !rhOut) return null;
+  if (!slAn) { slAn = rhCtx.createAnalyser(); slAn.fftSize = 256; slAn.smoothingTimeConstant = .75; rhOut.connect(slAn); slBins = new Uint8Array(slAn.frequencyBinCount); }
+  slAn.getByteFrequencyData(slBins); const B = [];
+  for (let k = 0; k < 12; k++) { const a = Math.floor(2 ** (k / 2)), b = Math.max(a + 1, Math.floor(2 ** ((k + 1) / 2))); let s = 0; for (let i = a; i < b; i++) s += slBins[i]; B.push(s / (b - a) / 255); }
+  return B;
+}
+const SL_FRONT = (() => { const r = seeded(17), L = []; let x = 0; while (x < W) { const w = 14 + Math.floor(r() * 14), h = 30 + Math.floor(r() * 34); L.push({x, w, h, band: L.length % 12, ant: r() < .45}); x += w + 2 + Math.floor(r() * 4); } return L; })();
+function slFront(scroll, spec, pulse) {  // la ville du premier plan : chaque immeuble écoute une bande de fréquences et allume ses fenêtres du bas vers le haut ; les antennes clignotent sur le temps
+  const o = Math.floor(scroll * .7) % W;
+  for (const rep of [0, W]) for (const b of SL_FRONT) {
+    const x = b.x - o + rep; if (x > W || x + b.w < 0) continue; const y = H - b.h, rows = Math.floor((b.h - 6) / 5), lit = Math.round((spec ? spec[b.band] : .2) * rows * 1.4);
+    px(g, '#05010b', x - 1, y - 1, b.w + 2, b.h + 1); px(g, '#0a0418', x, y, b.w, b.h);
+    for (let j = 0; j < rows; j++) for (let xx = x + 2; xx < x + b.w - 2; xx += 4) px(g, j < lit ? (j >= rows * .7 ? '#ff4fa8' : j >= rows * .4 ? '#3fe0ff' : '#ffd84a') : '#160c2c', xx, H - 6 - j * 5, 2, 2);
+    if (b.ant) { const ax = x + (b.w >> 1); px(g, '#3a2a5a', ax, y - 7, 1, 7); px(g, pulse > .5 ? '#ff4a5a' : '#5a1a2a', ax - 1, y - 9, 3, 2); }
+  }
+}
+function slPathDraw() {  // l'écran de fin : tout le vol dessiné, avec les étoiles cueillies à leur place
+  const P = rh.path || [], L = rh.c.len || 1, x0 = 12, w = W - 24, y0 = 20, h = 14, Y = y => Math.round(y0 + (y - SL.TOP + 6) / (slY(0) - SL.TOP + 12) * h), X = t => Math.round(x0 + Math.max(0, Math.min(1, t / L)) * w);
+  g.fillStyle = 'rgba(7,4,26,.88)'; g.fillRect(x0 - 6, y0 - 6, w + 12, h + 12); px(g, '#3fe0ff', x0 - 6, y0 - 6, w + 12, 1);
+  for (let i = 1; i < P.length; i++) { const ya = Y(P[i - 1][1]), yb = Y(P[i][1]); px(g, P[i][2] || '#3fe0ff', X(P[i][0]), Math.min(ya, yb), 1, Math.abs(yb - ya) + 1); }
+  for (const n of rh.notes) if (n.kind === 'orb' && n.judged && !n.missed) px(g, SL.COLS[n.lane], X(n.t) - 1, Y(slY(n.lane)) - 1, 3, 3);
+  pxFont(g, 'TON VOL', W - 14, y0 + h + 4, '#c8f8ff', 5, 'right');
+}
 function slFx(n, w) {
   rh.judge = {text: w ? w[1] : 'RATÉ', col: w ? w[3] : '#ff4a5a', t: 24};
-  if (w) { const y = n.kind === 'gate' ? rh.y : slY(n.lane), col = n.kind === 'gate' ? '#ffd84a' : SL.COLS[n.lane]; for (let i = 0; i < (n.kind === 'gate' ? 16 : 7); i++) rh.sparks.push({x: SL.SX + 6, y, vx: -Math.random() * 2.5, vy: (Math.random() - .5) * 2.5, life: 16, col}); }
+  if (w) { const y = n.kind === 'gate' ? rh.y : slY(n.lane), col = n.kind === 'gate' ? '#ffd84a' : SL.COLS[n.lane]; rh.tcol = col; for (let i = 0; i < (n.kind === 'gate' ? 16 : 7); i++) rh.sparks.push({x: SL.SX + 6, y, vx: -Math.random() * 2.5, vy: (Math.random() - .5) * 2.5, life: 16, col}); }
 }
 function slBoost() {  // turbo : franchit la porte la plus proche si elle arrive au bon moment
   const now = rhNow(); let near = null; rh.boost = 10;
@@ -1133,6 +1170,7 @@ function slDraw() {
   const app = rh.stars > 6 ? 1 : rh.stars > 3 ? 1.25 : 1.55, sp = (W - SL.SX) / app, scroll = Math.max(0, now) * sp, sh = rh.shake ? (rh.shake % 2 ? 1 : -1) : 0;
   g.drawImage(SL_SKY, 0, 0);
   for (const [img, k] of [[SL_FAR, .15], [SL_NEAR, .4]]) { const o = Math.floor(scroll * k) % W; g.drawImage(img, -o, 0); g.drawImage(img, W - o, 0); }
+  slFront(scroll, live && rh.mode === 'play' ? slSpectrum() : null, pulse);
   // les quatre altitudes : des pointillés qui défilent, plus clairs sur le temps
   const aim = slMouse.y == null ? -1 : slLaneAt(slMouse.y);
   for (let l = 0; l < SL.LANES; l++) { const y = slY(l); for (let x = (-Math.floor(scroll) % 8 + 8) % 8; x < W; x += 8) px(g, l === aim && live ? '#5a4a9a' : pulse > .5 ? '#3a2a6a' : '#22183e', x, y, 3, 1); }
@@ -1147,7 +1185,7 @@ function slDraw() {
     else if (!n.missed) { const close = Math.abs(n.t - now) < RH.WIN[1][0]; for (let y = SL.TOP - 10; y < slY(0) + 12; y++) px(g, (y + rh.tick) % 6 < 3 ? (close ? '#ffffff' : '#ffd84a') : (close ? '#fff4a0' : '#c49a1a'), Math.round(x) - 1, y, 3, 1); px(g, '#05010b', Math.round(x) - 2, SL.TOP - 12, 5, 2); px(g, '#05010b', Math.round(x) - 2, slY(0) + 12, 5, 2); }
   }
   // le vaisseau, sa traînée, son turbo
-  rh.trail.forEach((y, i) => { if (i % 2) px(g, '#1a6a9a', SL.SX - 4 - (rh.trail.length - i) * 3, Math.round(y), 2, 1); });
+  rh.trail.forEach((y, i) => { if (i % 2) px(g, rh.tcol || '#1a6a9a', SL.SX - 4 - (rh.trail.length - i) * 3, Math.round(y), 2, i > 8 ? 2 : 1); });  // la traînée, de la couleur de la dernière étoile cueillie
   const sy = Math.round(rh.y) + sh; g.drawImage(SL_FLAME[Math.floor(rh.tick / 3) % 2], SL.SX - 9, sy - 1); if (rh.boost) { px(g, '#ffa030', SL.SX - 16, sy, 6, 1); px(g, '#fff4a0', SL.SX - 12, sy, 3, 1); }
   g.drawImage(SL_SHIP, SL.SX - 6, sy - 4);
   for (const s of rh.sparks) { g.globalAlpha = s.life / 16; px(g, s.col, s.x, s.y, 2, 2); g.globalAlpha = 1; }
@@ -1164,6 +1202,7 @@ function slDraw() {
     if (rh.mode !== 'over') pxFont(g, rhStarTxt(rh.stars), 4, H - 6, '#6a5a9a', 6);  // sur l'écran de fin, la courbe prend ce coin
   }
   rhScreens(70);
+  if (rh.mode === 'over' && rh.tick - rh.overAt > 20) slPathDraw();
 }
 const slMove = d => { if (rh?.mode === 'play') rh.lane = Math.max(0, Math.min(SL.LANES - 1, rh.lane + d)); };
 const slMouse = {x: 0, y: null, at: 0}, slLaneAt = y => Math.max(0, Math.min(SL.LANES - 1, Math.round(SL.LANES - 1 - (y - SL.TOP) / SL.GAP)));
@@ -1198,7 +1237,8 @@ cv.addEventListener('wheel', e => { if (rh?.mode !== 'play') return; e.preventDe
 cv.onpointerdown = e => { e.preventDefault(); if (!rh) return; if (rh.mode === 'play') slBoost(); else rhPress(); };
 {  // vérification : étoiles sur les 4 altitudes, des portes dans chaque difficulté, jamais trois étages d'un coup sur des notes serrées, aucune étoile pendant un ruban
   const c = rhCompose(RH_SONGS[12]), ok = Object.keys(RH_DIFFS).every(d => { const x = RHG.chart(rhChart(c, d), c, d), o = x.filter(n => n.kind === 'orb'); return x.some(n => n.kind === 'gate') && (d === 'facile' || o.some(n => n.len)) && o.every((n, i) => !i || (n.t - o[i - 1].t >= .26 || Math.abs(n.lane - o[i - 1].lane) <= 1) && n.t >= o[i - 1].t + (o[i - 1].len || 0)); });
-  console.assert(ok, 'sillage');
+  const lo = RHG.chart(rhChart(c, 'normal'), c, 'normal').filter(n => n.kind === 'orb'), used = new Set(lo.map(n => n.lane));
+  console.assert(ok && used.size === 4, 'sillage', [...used]);
 }
 ctx.onOpen(() => rhOpen());
 

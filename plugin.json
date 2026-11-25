@@ -1,7 +1,7 @@
 {
   "id": "neodex.sillage",
   "name": "Sillage",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "author": "NDesumeur",
   "description": "Jeu de rythme en vol : ton vaisseau file sur quatre altitudes au-dessus d'une ville de nuit. Monte et descends pour cueillir les étoiles à la hauteur de leur son, suis les rubans des notes longues et franchis les portes d'énergie d'un coup de turbo. Les 1200 morceaux de Rythme notés de 1 à 10 étoiles ou ta propre musique ; combo, note de S à D. Se joue à la manette ; l'écran de fin montre la courbe de précision le long du morceau. L'altitude suit la mélodie, la ville réagit à la musique, traînée de la couleur des étoiles, dessin du vol à la fin.",
   "icon": "icon.png",
@@ -10,7 +10,10 @@
   "neobase": ">=4.1.0",
   "type": "app",
   "category": "Jeux",
-  "compatibility": ["windows", "linux"],
+  "compatibility": [
+    "windows",
+    "linux"
+  ],
   "syncMode": "progression",
   "syncInfo": "Scores et notes par niveau, réglages.",
   "mobile": false,
@@ -24,5 +27,84 @@
     "storage",
     "documents",
     "music"
+  ],
+  "succes": [
+    {
+      "id": "premier",
+      "nom": "Premières notes",
+      "texte": "Finir un premier morceau"
+    },
+    {
+      "id": "dix",
+      "nom": "Répertoire",
+      "texte": "Finir 10 morceaux différents"
+    },
+    {
+      "id": "trente",
+      "nom": "Grand répertoire",
+      "texte": "Finir 30 morceaux différents"
+    },
+    {
+      "id": "note-a",
+      "nom": "En rythme",
+      "texte": "Obtenir la note A sur un morceau"
+    },
+    {
+      "id": "note-s",
+      "nom": "Virtuose",
+      "texte": "Obtenir la note S sur un morceau"
+    },
+    {
+      "id": "s10",
+      "nom": "Maestro",
+      "texte": "Obtenir la note S sur 10 morceaux"
+    },
+    {
+      "id": "combo100",
+      "nom": "Cent de suite",
+      "texte": "Faire un combo de 100 notes"
+    },
+    {
+      "id": "combo300",
+      "nom": "Transe",
+      "texte": "Faire un combo de 300 notes"
+    },
+    {
+      "id": "parfait",
+      "nom": "Sans une fausse note",
+      "texte": "Finir un morceau avec 100 % de précision",
+      "cache": true
+    },
+    {
+      "id": "import",
+      "nom": "Ma musique",
+      "texte": "Importer un de tes morceaux"
+    }
+  ],
+  "records": [
+    {
+      "id": "morceaux",
+      "nom": "Morceaux joués",
+      "sens": "haut",
+      "format": "nombre"
+    },
+    {
+      "id": "notes-s",
+      "nom": "Notes S",
+      "sens": "haut",
+      "format": "nombre"
+    },
+    {
+      "id": "combo",
+      "nom": "Meilleur combo",
+      "sens": "haut",
+      "format": "nombre"
+    },
+    {
+      "id": "precision",
+      "nom": "Meilleure précision",
+      "sens": "haut",
+      "format": "pourcent"
+    }
   ]
 }

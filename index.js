@@ -323,6 +323,9 @@ export default async function (ctx) {
   const saveGames = () => { clearTimeout(gamesTimer); gamesTimer = setTimeout(() => { gamesTimer = null; folder.write('games', games).catch(() => {}); }, 500); };
   const best = (k, v) => { const b = games.best[k]; if (b == null || v > b) { games.best[k] = v; saveGames(); return true; } return false; };
   const gstore = (k, init) => (games[k] ??= init);
+  // les trophées de NeoDex (3.4.8 et plus) : succès et records déclarés dans plugin.json ; sur un NeoDex plus ancien, rien ne se passe
+  const trophy = id => { ctx.games?.unlock(id).catch(() => {}); };
+  const trophyRecord = (id, v) => { if (v != null && Number.isFinite(+v)) ctx.games?.record(id, +v).catch(() => {}); };
 function gameLoop(st, appKey, update, draw) {
   cancelAnimationFrame(st.raf);
   const STEP = 1000 / 60; let acc = 0, last = performance.now();
@@ -1062,7 +1065,8 @@ for (const id of ['rhVol', 'rhClick', 'rhOffset']) $(id).addEventListener('chang
 setInterval(() => { if (rhCtx?.state === 'running' && (!view.classList.contains('on') || rh?.mode !== 'play')) rhCtx.suspend(); }, 200);  // la musique s'arrête avec la partie
 document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) rhPause(); });  // Échap sort du plein écran : on met en pause
 $('gNew').onclick = () => { if (rh) rhSelect(rh.song, rh.diff); $('gNew').blur(); };
-function rhInfo() { const res = games.rhythm || {}, all = Object.values(res); showStats([['Morceaux joués', all.length], ['Notes S', all.filter(r => r.grade === 'S').length], ['Meilleur combo', all.reduce((m, r) => Math.max(m, r.combo || 0), 0)]]); }
+function rhInfo() {
+  setTimeout(rhTrophies); const res = games.rhythm || {}, all = Object.values(res); showStats([['Morceaux joués', all.length], ['Notes S', all.filter(r => r.grade === 'S').length], ['Meilleur combo', all.reduce((m, r) => Math.max(m, r.combo || 0), 0)]]); }
 function rhOpen() {
   const p = games.rhythmPrefs || {}; for (const id of ['rhVol', 'rhClick', 'rhOffset']) if (p[id] != null) $(id).value = p[id];
   rhOffMs = +$('rhOffset').value; rhInfo();
@@ -1239,6 +1243,15 @@ cv.onpointerdown = e => { e.preventDefault(); if (!rh) return; if (rh.mode === '
   const c = rhCompose(RH_SONGS[12]), ok = Object.keys(RH_DIFFS).every(d => { const x = RHG.chart(rhChart(c, d), c, d), o = x.filter(n => n.kind === 'orb'); return x.some(n => n.kind === 'gate') && (d === 'facile' || o.some(n => n.len)) && o.every((n, i) => !i || (n.t - o[i - 1].t >= .26 || Math.abs(n.lane - o[i - 1].lane) <= 1) && n.t >= o[i - 1].t + (o[i - 1].len || 0)); });
   const lo = RHG.chart(rhChart(c, 'normal'), c, 'normal').filter(n => n.kind === 'orb'), used = new Set(lo.map(n => n.lane));
   console.assert(ok && used.size === 4, 'sillage', [...used]);
+}
+// les trophées, tirés des statistiques et des records gardés (aussi à l'ouverture : ce qui a été fait avant compte)
+function rhTrophies() {
+  const all = Object.values(games.rhythm || {}), s = all.filter(r => r.grade === 'S').length, a = all.some(r => 'SA'.includes(r.grade)), combo = all.reduce((m, r) => Math.max(m, r.combo || 0), 0), acc = all.reduce((m, r) => Math.max(m, r.acc || 0), 0), imp = rhImports().length;
+  const sig = [all.length, s, a, combo, acc, imp].join(); if (sig === rhTrophies.sig) return; rhTrophies.sig = sig;
+  trophyRecord('morceaux', all.length || null); trophyRecord('notes-s', s || null); trophyRecord('combo', combo || null); trophyRecord('precision', all.length ? acc : null);
+  if (all.length >= 1) trophy('premier'); if (all.length >= 10) trophy('dix'); if (all.length >= 30) trophy('trente');
+  if (a) trophy('note-a'); if (s >= 1) trophy('note-s'); if (s >= 10) trophy('s10'); if (combo >= 100) trophy('combo100'); if (combo >= 300) trophy('combo300');
+  if (acc >= 100) trophy('parfait'); if (imp) trophy('import');
 }
 ctx.onOpen(() => rhOpen());
 
